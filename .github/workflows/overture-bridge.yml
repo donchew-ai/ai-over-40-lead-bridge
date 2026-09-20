@@ -44,13 +44,36 @@ jobs:
 
       - name: Publish latest lead data
         run: |
+          python - <<'PY'
+          import json
+
+          src = "data/overture_places.geojson"
+          dst = "data/overture_places_bridge.geojson"
+          limit = 500
+
+          with open(src, "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          features = data.get("features", [])[:limit]
+
+          output = {
+              "type": "FeatureCollection",
+              "features": features
+          }
+
+          with open(dst, "w", encoding="utf-8") as f:
+              json.dump(output, f, separators=(",", ":"))
+
+          print(f"Bridge file created with {len(features)} places")
+          PY
+
           git config user.name "AI Over 40 Lead Bridge"
           git config user.email "actions@github.com"
-          git add data/overture_places.geojson
+          git add data/overture_places_bridge.geojson
 
           if git diff --cached --quiet; then
-            echo "No Overture data changes detected."
+            echo "No bridge data changes detected."
           else
-            git commit -m "Update Overture Places lead data"
+            git commit -m "Update Overture bridge lead data"
             git push
-          fi
+          fi    
