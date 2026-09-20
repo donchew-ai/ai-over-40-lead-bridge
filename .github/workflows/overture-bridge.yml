@@ -1,0 +1,56 @@
+name: AI Over 40 Overture Lead Bridge
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "15 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  build-lead-file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Overture Maps client
+        run: |
+          python -m pip install --upgrade pip
+          pip install overturemaps
+
+      - name: Download latest Overture Places data
+        run: |
+          mkdir -p data
+          overturemaps download \
+            --bbox=-95.4,29.5,-95.0,29.8 \
+            -f geojson \
+            --type=place \
+            -o data/overture_places.geojson
+
+      - name: Verify output
+        run: |
+          test -s data/overture_places.geojson
+          echo "Overture Places file created successfully."
+          ls -lh data/overture_places.geojson
+
+      - name: Publish latest lead data
+        run: |
+          git config user.name "AI Over 40 Lead Bridge"
+          git config user.email "actions@github.com"
+          git add data/overture_places.geojson
+
+          if git diff --cached --quiet; then
+            echo "No Overture data changes detected."
+          else
+            git commit -m "Update Overture Places lead data"
+            git push
+          fi
